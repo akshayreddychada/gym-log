@@ -1,4 +1,6 @@
 // Default routine, rotation logic and the numbers behind progress charts.
+import { DEFAULT_APT, DEFAULT_ABS, DEFAULT_SUPPS, muscleOf } from './library.js';
+import { DEFAULT_PROFILE, DEFAULT_TARGETS } from './nutrition.js';
 
 const ex = (id, name, group) => ({ id, name, group });
 
@@ -75,9 +77,17 @@ export const DEFAULT_ROUTINE = {
 
 export const DEFAULT_SETTINGS = {
   unit: 'lb',
+  waterUnit: 'oz',
   restSec: 90,
   stepGoal: 10000,
   routine: DEFAULT_ROUTINE,
+  profile: { ...DEFAULT_PROFILE },
+  targets: { ...DEFAULT_TARGETS },
+  supps: DEFAULT_SUPPS.map((s) => ({ ...s, on: true })),
+  apt: DEFAULT_APT.map((x) => ({ ...x })),
+  abs: DEFAULT_ABS.map((x) => ({ ...x })),
+  customFoods: [],
+  favFoods: [],
 };
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -107,7 +117,8 @@ export function daysBetween(a, b) {
 // day never throws the split out of order.
 export function nextDay(routine, sessions) {
   const days = routine.days;
-  const done = sessions.filter((s) => s.status === 'done').sort(bySessionTime);
+  // Custom (body-map) workouts don't move the split forward.
+  const done = sessions.filter((s) => s.status === 'done' && days.some((d) => d.id === s.dayId)).sort(bySessionTime);
   const last = done[done.length - 1];
   if (!last) return days[0];
   const i = days.findIndex((d) => d.id === last.dayId);
@@ -196,17 +207,21 @@ export function bestE1rm(sessions, exId, unit, excludeId) {
 }
 
 // Builds a fresh session for a day, prefilled with last time's numbers.
-export function newSession(day, routine, sessions, unit) {
-  const exercises = day.exercises.map((e) => {
+// opts.exercises / opts.muscles override the day's list (body-map workouts).
+export function newSession(day, routine, sessions, unit, opts = {}) {
+  const list = opts.exercises || day.exercises;
+  const exercises = list.map((e) => {
     const last = lastSetsFor(sessions, e.id);
     const sets = last
       ? last.sets.map((st) => ({ w: convert(Number(st.w) || 0, last.session.unit || unit, unit), r: Number(st.r), done: false }))
       : [0, 1, 2].map(() => ({ w: '', r: 10, done: false }));
-    return { id: e.id, name: e.name, group: e.group, sets };
+    return { id: e.id, name: e.name, group: e.group || '', muscle: muscleOf(e), sets };
   });
+  const warm = day.rest || opts.warmup === false ? [] : routine.warmup;
   return {
     id: uid(),
-    date: ymd(),
+    date: opts.date || ymd(),
+    muscles: opts.muscles || [...new Set(exercises.map((e) => e.muscle).filter(Boolean))],
     dayId: day.id,
     dayName: day.name,
     color: day.color,
@@ -216,7 +231,7 @@ export function newSession(day, routine, sessions, unit) {
     finishedAt: day.rest ? Date.now() : null,
     rest: !!day.rest,
     // Warm-up numbers (minutes, incline, speed) carry over from last time.
-    warmup: day.rest ? [] : routine.warmup.map((w) => {
+    warmup: warm.map((w) => {
       const prev = [...sessions].filter((s) => s.status === 'done').sort(bySessionTime).reverse()
         .flatMap((s) => s.warmup || []).find((x) => x.id === w.id && x.done);
       return { ...w, ...(prev ? { min: prev.min, incline: prev.incline, speed: prev.speed } : {}), name: w.name, done: false };
@@ -242,4 +257,27 @@ export function streakDays(sessions) {
   let n = 0;
   while (dates.has(d)) { n++; d = addDays(d, -1); }
   return n;
+}
+
+// Most recent date each muscle had a finished set.
+export function muscleLastTrained(sessions) {
+  const out = {};
+  for (const s of sessions) {
+    if (s.status !== 'done' || s.rest) continue;
+    for (const e of s.exercises || []) {
+      const m = muscleOf(e);
+      if (m && doneSets(e).length && (!out[m] || out[m] < s.date)) out[m] = s.date;
+    }
+  }
+  return out;
+}
+
+// Done sets per muscle across sessions in [from, to].
+export function setsByMuscle(sessions, from, to) {
+  const out = {};
+  for (const s of sessions) {
+    if (s.status !== 'done' || s.rest || s.date < from || s.date > to) continue;
+    for (const e of s.exercises || []) { const m = muscleOf(e); if (m) out[m] = (out[m] || 0) + doneSets(e).length; }
+  }
+  return out;
 }
