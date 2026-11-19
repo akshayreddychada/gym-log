@@ -212,18 +212,22 @@ export function newSession(day, routine, sessions, unit, opts = {}) {
   const list = opts.exercises || day.exercises;
   const exercises = list.map((e) => {
     const last = lastSetsFor(sessions, e.id);
-    const sets = last
+    let sets = last
       ? last.sets.map((st) => ({ w: convert(Number(st.w) || 0, last.session.unit || unit, unit), r: Number(st.r), done: false }))
-      : [0, 1, 2].map(() => ({ w: '', r: 10, done: false }));
-    return { id: e.id, name: e.name, group: e.group || '', muscle: muscleOf(e), sets };
+      : [0, 1, 2].map(() => ({ w: '', r: Number(String(opts.reps?.[e.id] || '10').split(/[–-]/)[0]) || 10, done: false }));
+    // A planned set count (from the birthday plan) wins over last time's count.
+    const n = opts.setCounts?.[e.id];
+    if (n) sets = Array.from({ length: n }, (_, i) => ({ ...(sets[i] || sets[sets.length - 1]), done: false }));
+    return { id: e.id, name: e.name, group: e.group || '', muscle: muscleOf(e), sets, ...(opts.reps?.[e.id] ? { target: opts.reps[e.id] } : {}) };
   });
-  const warm = day.rest || opts.warmup === false ? [] : routine.warmup;
+  const warm = (day.rest || opts.warmup === false ? [] : routine.warmup).filter((w) => !(opts.noWalk && w.id === 'walk'));
   return {
     id: uid(),
     date: opts.date || ymd(),
     muscles: opts.muscles || [...new Set(exercises.map((e) => e.muscle).filter(Boolean))],
     dayId: day.id,
     dayName: day.name,
+    ...(opts.planDay ? { planDay: opts.planDay } : {}),
     color: day.color,
     unit,
     status: day.rest ? 'done' : 'active',

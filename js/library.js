@@ -112,6 +112,11 @@ export function muscleOf(ex) {
 
 // The muscles each split day covers. Used to light up the body map for a preset.
 export const DAY_MUSCLES = {
+  push: ['chest', 'shoulders', 'triceps'],
+  pull: ['lats', 'upperback', 'biceps', 'shoulders'],
+  quads: ['quads', 'adductors', 'calves', 'abs'],
+  upper: ['chest', 'upperback', 'shoulders', 'triceps', 'biceps'],
+  hams: ['hamstrings', 'glutes', 'abductors', 'calves', 'abs'],
   chest: ['chest', 'abs'],
   shoulders: ['shoulders', 'biceps'],
   legs: ['quads', 'hamstrings', 'glutes', 'adductors', 'abductors', 'calves', 'abs'],

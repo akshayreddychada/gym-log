@@ -1,7 +1,7 @@
 // Network first so updates land on the next open; cached copy keeps the app working offline.
-const CACHE = 'gym-log-v2';
+const CACHE = 'gym-log-v3';
 const SHELL = ['./', 'index.html', 'styles.css', 'manifest.webmanifest', 'js/app.js', 'js/data.js', 'js/charts.js',
-  'js/config.js', 'js/db-firebase.js', 'js/foods.js', 'js/library.js', 'js/nutrition.js', 'js/body.js', 'vendor/firebase.js', 'icons/icon-192.png'];
+  'js/config.js', 'js/db-firebase.js', 'js/foods.js', 'js/library.js', 'js/nutrition.js', 'js/body.js', 'js/journey.js', 'vendor/firebase.js', 'icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

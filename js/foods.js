@@ -91,6 +91,7 @@ export const FOODS = [
   F('basmati', 'Basmati rice, cooked', 'carb', 130, 2.7, 28.2, 0.3, 0.4, [CUP(158), u('katori (150 g)', 150), G], 'rice white'),
   F('quinoa', 'Quinoa, cooked', 'carb', 120, 4.4, 21.3, 1.9, 2.8, [CUP(185), G]),
   F('roti', 'Whole wheat roti (no ghee)', 'carb', 264, 9.6, 51.6, 2.4, 8, [u('roti', 40, 2), G], 'chapati indian phulka'),
+  F('sourdough', 'Sourdough bread', 'carb', 272, 10.8, 51.9, 2.4, 2.2, [u('slice', 50), G], 'bread toast'),
   F('ww-bread', 'Whole wheat bread', 'carb', 252, 12.4, 42.7, 3.5, 6, [u('slice', 32, 2), G], 'toast'),
   F('sweet-potato', 'Sweet potato, baked', 'carb', 90, 2, 20.7, 0.2, 3.3, [u('medium', 114), G]),
   F('potato', 'Potato, boiled', 'carb', 87, 1.9, 20.1, 0.1, 1.8, [u('medium', 173), G], 'aloo'),

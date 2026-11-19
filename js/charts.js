@@ -82,11 +82,12 @@ function attachHover(el, svg, points, xs, tipHtml, onIndex) {
 
 // points: [{date, y, ...}], sorted by date. Evenly spaced by session, not by calendar,
 // so a gap week doesn't squash the line.
-export function lineChart(el, points, { color = 'var(--accent)', height = 200, tip, empty = 'No data yet' } = {}) {
+// ref: optional values (one per point) drawn as a dashed target line.
+export function lineChart(el, points, { color = 'var(--accent)', height = 200, tip, empty = 'No data yet', ref } = {}) {
   if (!points.length) { el.innerHTML = `<p class="chart-empty">${esc(empty)}</p>`; return; }
   mount(el, (w) => {
     const h = height, pad = { l: 40, r: 14, t: 14, b: 26 };
-    const ys = points.map((p) => p.y);
+    const ys = [...points.map((p) => p.y), ...(ref || []).filter((v) => v != null)];
     const { lo, hi, ticks } = niceTicks(Math.min(...ys), Math.max(...ys));
     const yScale = (v) => pad.t + (h - pad.t - pad.b) * (1 - (v - lo) / (hi - lo || 1));
     const n = points.length;
@@ -96,6 +97,10 @@ export function lineChart(el, points, { color = 'var(--accent)', height = 200, t
     const d = points.map((p, i) => `${i ? 'L' : 'M'}${xs[i].toFixed(1)},${yScale(p.y).toFixed(1)}`).join('');
     const area = `${d}L${xs[n - 1].toFixed(1)},${h - pad.b}L${xs[0].toFixed(1)},${h - pad.b}Z`;
     s += `<path d="${area}" fill="${color}" opacity=".10"/>`;
+    if (ref) {
+      const rd = ref.map((v, i) => `${i ? 'L' : 'M'}${xs[i].toFixed(1)},${yScale(v).toFixed(1)}`).join('');
+      s += `<path d="${rd}" fill="none" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    }
     s += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
     if (n <= 40) points.forEach((p, i) => { s += `<circle cx="${xs[i]}" cy="${yScale(p.y)}" r="3.5" fill="${color}" stroke="var(--surface)" stroke-width="2"/>`; });
     s += `<line class="cross" x1="0" x2="0" y1="${pad.t}" y2="${h - pad.b}" visibility="hidden"/>`;
