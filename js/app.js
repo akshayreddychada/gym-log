@@ -403,7 +403,7 @@ function todayView() {
     <button class="icon-btn" data-act="tab" data-v="setup" aria-label="Setup">${icon('gear')}</button>
   </header>
   ${dateBar()}
-  ${plan ? journeyCard(plan) + checkinCard(plan) : ''}
+  ${plan ? journeyCard(plan) + checkinCard(plan) : startsSoonCard(d)}
 
   <section class="card score-card">
     ${ring(sc.pct / 100, 112, 10, scoreColor, `<b class="score-num">${sc.pct}</b><span>day score</span>`)}
@@ -1225,6 +1225,22 @@ function withPrescriptions(plan, dayId) {
   plan.reps = Object.fromEntries(plan.list.map((id) => [id, prescription(dayId, id).reps]));
   plan.noWalk = !p.walkWarmup;
   return plan;
+}
+
+// Before day 1: a preview of what's coming.
+function startsSoonCard(d) {
+  const j = S.settings.journey;
+  if (!j?.on || d >= j.start || daysBetween(d, j.start) > 7) return '';
+  const p = planFor(j, j.start);
+  const n = daysBetween(d, j.start);
+  const { meals } = buildMeals(p, j.trainTime);
+  return `<section class="card journey" style="--day:${plate(p.day.color)}">
+    <p class="muted small">Birthday plan · ${mdDate(j.start)} → ${mdDate(j.end)}</p>
+    <h2 class="jc-title">Day 1 starts ${n === 1 ? 'tomorrow' : `in ${n} days`}, ${shortDate(j.start)}</h2>
+    <div class="jc-today"><span class="pip"></span><b>${esc(p.day.name)}</b><span>${fmtInt(p.targets.kcal)} kcal</span><span>${p.targets.p} g protein</span><span>${esc(p.steps)}</span></div>
+    <p class="small">First meal: ${esc(meals[0].time)}, ${esc(meals[0].option.name)}. Weigh yourself tomorrow morning after the bathroom, before you eat or drink, and log it here.</p>
+    <div class="btn-row"><button class="btn primary grow" data-act="tab" data-v="plan">See the full plan</button><button class="btn" data-act="plan-open" data-v="${j.start}">Tomorrow in detail</button></div>
+  </section>`;
 }
 
 function journeyCard(p) {
