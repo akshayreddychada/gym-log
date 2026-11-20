@@ -90,10 +90,20 @@ function migrate(s) {
     ...withJourney(s, d),
   };
 }
-// Adds the birthday plan (Nov 19 → Feb 26) the first time, switching the split to
+// Adds the birthday plan (Nov 20 → Feb 26) the first time, switching the split to
 // Push / Pull / Quads / Rest / Upper / Hamstrings. Exercise ids are unchanged, so history carries over.
 function withJourney(s, d) {
-  if (s.journey) return { journey: { ...JOURNEY_DEFAULTS, ...s.journey } };
+  if (s.journey) {
+    const j = { ...JOURNEY_DEFAULTS, ...s.journey };
+    // The plan moved from Nov 19 to Nov 20 as day 1. Saved once, then left alone.
+    if (j.start === '2026-11-19') {
+      j.start = '2026-11-20';
+      j.shifts = (j.shifts || []).filter((x) => x.from >= j.start);
+      j.checkins = {};
+      return { journey: j, _migrated: true };
+    }
+    return { journey: j };
+  }
   const prof = { ...DEFAULT_PROFILE, ...(s.profile || {}) };
   return {
     _migrated: true,
@@ -1174,8 +1184,10 @@ function setupView() {
 const kgOf = (v) => bwOf(v, 'kg');
 const showKg = (kg) => (bu() === 'kg' ? `${fmtNum(kg)} kg` : `${fmtNum(Math.round(kg * 2.20462 * 10) / 10)} lb`);
 const showKgDelta = showKg;
+// Weigh-ins from day 1 of the plan on; anything earlier isn't counted.
 function weightsKg() {
-  return Object.entries(S.daily).filter(([, v]) => v.bw).map(([date, v]) => ({ date, kg: kgOf(v) })).sort((a, b) => (a.date < b.date ? -1 : 1));
+  const start = S.settings.journey?.start || '';
+  return Object.entries(S.daily).filter(([d, v]) => v.bw && d >= start).map(([date, v]) => ({ date, kg: kgOf(v) })).sort((a, b) => (a.date < b.date ? -1 : 1));
 }
 function avgKgAround(date, days = 7) {
   const w = weightsKg().filter((x) => x.date <= date && x.date > addDays(date, -days));
@@ -1298,7 +1310,7 @@ function checkinCard(p) {
   </section>`;
 }
 function waistChange(date) {
-  const w = Object.entries(S.daily).filter(([d, v]) => v.waist && d <= date).sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  const w = Object.entries(S.daily).filter(([d, v]) => v.waist && d <= date && d >= J().start).sort((a, b) => (a[0] < b[0] ? -1 : 1));
   if (w.length < 2) return '';
   const [first, last] = [w[0][1], w[w.length - 1][1]];
   const d = Math.round((Number(last.waist) - Number(first.waist)) * 10) / 10;
@@ -1470,12 +1482,12 @@ function drawJourneyChart() {
   if (!el) return;
   const j = J();
   const toU = (kg) => (bu() === 'kg' ? kg : Math.round(kg * 22.0462) / 10);
-  const pts = weightsKg().filter((w) => w.date >= addDays(j.start, -3) && w.date <= j.end);
+  const pts = weightsKg().filter((w) => w.date <= j.end);
   const draw = () => {
     const w = el.clientWidth;
     if (!w) return;
     const h = 210, pad = { l: 36, r: 12, t: 12, b: 24 };
-    const x0 = addDays(j.start, -3), span = daysBetween(x0, j.end);
+    const x0 = j.start, span = daysBetween(x0, j.end);
     const X = (d) => pad.l + ((w - pad.l - pad.r) * daysBetween(x0, d)) / span;
     const ys = [j.startKg, j.goalKg, ...pts.map((p) => p.kg)];
     const lo = Math.floor(Math.min(...ys) - 1), hi = Math.ceil(Math.max(...ys) + 1);

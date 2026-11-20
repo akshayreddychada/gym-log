@@ -1,4 +1,4 @@
-// The birthday cut: Nov 19, 2026 → Feb 26, 2027.
+// The birthday cut: Nov 20, 2026 → Feb 26, 2027 (99 days).
 // Everything here is pure (no DOM, no storage) so it can be tested from Node.
 import { FOODS } from './foods.js';
 import { addDays, daysBetween, parseYmd } from './data.js';
@@ -6,7 +6,7 @@ import { libById } from './library.js';
 
 export const JOURNEY_DEFAULTS = {
   on: true,
-  start: '2026-11-19',
+  start: '2026-11-20',
   end: '2027-02-26',
   startKg: 79,
   goalKg: 69,
